@@ -94,6 +94,11 @@ vim.g.maplocalleader = ' '
 vim.g.have_nerd_font = false
 
 -- [[ Setting options ]]
+
+vim.opt.expandtab = true
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
@@ -169,6 +174,15 @@ vim.o.confirm = true
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
+vim.keymap.set('n', '<M-l>', function()
+  vim.cmd { cmd = 'NvimTreeToggle', args = {} }
+end)
+
+vim.keymap.set('n', '<M-m>', function()
+  vim.cmd { cmd = 'SymbolsOutline', args = {} }
+end)
+
+vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, { desc = '[R]e[n]ame' })
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
@@ -234,6 +248,9 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
+-- Enable NF flag manually for JetBrainsMonoNF usage in web-dev-icons
+vim.g.have_nerd_font = true
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -282,6 +299,27 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+  },
+  --
+  -- Tabbar
+  {
+    'akinsho/bufferline.nvim',
+    version = '*',
+    dependencies = 'nvim-tree/nvim-web-devicons',
+    config = function()
+      vim.opt.termguicolors = true
+      require('bufferline').setup {}
+    end,
+  },
+
+  -- Symbols listing
+  {
+    'simrat39/symbols-outline.nvim',
+    event = 'VimEnter',
+    opts = {},
+    config = function()
+      require('symbols-outline').setup()
+    end,
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -492,6 +530,9 @@ require('lazy').setup({
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
     },
+    opts = {
+      inlay_hints = { enabled = true },
+    },
     config = function()
       -- Brief aside: **What is LSP?**
       --
@@ -671,7 +712,7 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -716,6 +757,7 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'clang-format',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -756,7 +798,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = { c = true, cpp = false }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -768,6 +810,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        cpp = { 'clang-format' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -876,28 +919,65 @@ require('lazy').setup({
     },
   },
 
-  { -- You can easily change to a different colorscheme.
+  {
+    -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    'askfiy/visual_studio_code',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
       ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
+      --require('tokyonight').setup {
+      --styles = {
+      --    comments = { italic = false }, -- Disable italics in comments
+      -- },
+      --}
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'visual_studio_code'
     end,
   },
+  {
+    'folke/tokyonight.nvim',
+    priority = 1000, -- Make sure to load this before all the other start plugins.
+    lazy = false,
+    config = function()
+      ---@diagnostic disable-next-line: missing-fields
+      --require('tokyonight').setup {
+      --styles = {
+      --    comments = { italic = false }, -- Disable italics in comments
+      -- },
+      --}
 
+      -- Load the colorscheme here.
+      -- Like many other themes, this one has different styles, and you could load
+      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+      -- vim.cmd.colorscheme 'tokyonight-night'
+    end,
+  },
+  {
+    'navarasu/onedark.nvim',
+    priority = 1000, -- make sure to load this before all the other start plugins
+    config = function()
+      require('onedark').setup {
+        style = 'deep',
+      }
+      -- Enable theme
+      -- require('onedark').load()
+    end,
+  },
+  {
+    'rebelot/kanagawa.nvim',
+    priority = 1000,
+    lazy = false,
+    config = function()
+      vim.cmd 'colorscheme kanagawa-dragon'
+    end,
+  },
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -938,6 +1018,24 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
+  -- TreeView for Directory
+  {
+    'nvim-tree/nvim-tree.lua',
+    event = 'VimEnter',
+    dependencies = {
+      -- Icons for TreeView
+      --      {
+      --        'nvim-tree/nvim-web-devicons',
+      --        event = 'VimEnter',
+      --        opts = {},
+      --      },
+    },
+    config = function()
+      require('nvim-tree').setup()
+      -- vim.cmd { cmd = 'NvimTreeToggle', args = {} }
+    end,
+  },
+  --
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
@@ -1014,3 +1112,4 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+-- vim: expandtab : tabstop=4
